@@ -1,0 +1,30 @@
+schema_version: "1.0"
+repository:
+  id: "valo.veritas"
+  name: "Veritas"
+  url: "https://github.com/nsolland/Veritas"
+  owner: "nsolland"
+  maintainers:
+    - nsolland
+  classification: receipt
+  role: "LA6 — receipt layer: attest observations and follow-on receipts without interpreting"
+  status: active
+  visibility: public
+  maturity: active-development
+  support: maintained
+  normative_status: normative-specification
+
+capabilities:
+  - "append_only_worm_receipts"
+  - "canonical_sha256_digests"
+  - "observation_package_attestation"
+  - "evidence_chain_binding"
+  - "provenance_preservation"
+
+prohibitions:
+  - "no_analysis_or_classification"
+  - "no_authorization"
+  - "no_rewriting_history"
+
+layers:
+  - "LA6-VERITAS"

@@ -1,0 +1,20 @@
+# Veritas
+
+VALO receipt layer (LA6). Attest observations and follow-on receipts. No interpretation.
+
+## Start here
+- `README.md` — doctrine, contracts, quick start
+- `src/veritas/contracts.py` — canonical receipt contracts
+- `src/veritas/service.py` — chain service
+- `src/veritas/worm.py` — WORM ledger
+- `repo-manifest.yaml` — metadata
+
+## Doctrine
+- Attest, don't interpret (rejects analysis fields).
+- Append-only WORM, SHA-256 hash-chained.
+- Deterministic stable-JSON digests.
+- Provenance-first.
+
+## Development
+`pytest -q` · `ruff check src tests` · `mypy src/veritas`
+PEP 668: `PYTHONPATH=src python3 -m pytest -q`

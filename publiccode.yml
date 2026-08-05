@@ -1,0 +1,35 @@
+publiccodeYmlVersion: "0.4"
+
+name: Veritas
+url: "https://github.com/nsolland/Veritas"
+softwareVersion: "0.1.0"
+releaseDate: "2026-08-05"
+platforms:
+  - linux
+  - mac
+  - windows
+categories:
+  - data-collection
+developmentStatus: alpha
+softwareType: "standalone/library"
+description:
+  en:
+    shortDescription: "VALO receipt layer — attest observations without interpreting."
+    longDescription: >
+      Veritas is the LA6 receipt layer of the VALO governance stack. It records
+      and attests observation packages and follow-on receipts into an
+      append-only, tamper-evident WORM ledger with canonical SHA-256 digests.
+      Veritas never analyses, classifies, concludes or authorizes.
+legal:
+  license: MIT
+  mainCopyrightOwner: "VALO Contributors"
+maintenance:
+  type: community
+  contacts:
+    - name: "VALO Contributors"
+      email: "engineering@valo.systems"
+localisation:
+  localisationReady: true
+  availableLanguages:
+    - en
+    - nb
