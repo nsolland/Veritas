@@ -1,4 +1,14 @@
-"""Veritas WORM audit log — hash-chained and append-only."""
+"""Veritas WORM audit log — hash-chained and append-only.
+
+Every entry links to the previous via a canonical digest. Any modification
+breaks the chain and fails ``verify()``.
+
+Chain hashes alone only detect *accidental* tampering: an attacker who can
+rewrite the ledger can also recompute every hash. ``anchor`` adds an external
+commitment — an Ed25519 signature over the current tail hash by an operator
+key the attacker does not hold — so ``verify_anchor`` fails on any rewrite or
+append after the last anchoring point.
+"""
 
 from __future__ import annotations
 
@@ -6,14 +16,20 @@ import json
 import os
 from collections.abc import Mapping
 from copy import deepcopy
+from datetime import datetime, timezone
 from os import PathLike
 from pathlib import Path
 from typing import Any, Final
+
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ed25519
 
 from veritas.digest import canonical_digest, stable_json
 
 _ZERO_HASH: Final = "0" * 64
 _RESERVED_FIELDS: Final = frozenset({"id", "prev", "hash"})
+_ANCHOR_ALGORITHM: Final = "Ed25519"
 Pathish = str | PathLike[str]
 
 
@@ -29,6 +45,8 @@ class WORMLog:
         self._entries: list[dict[str, Any]] = []
         self._entry_ids: set[str] = set()
         self._tail_hash = _ZERO_HASH
+        self._anchors: list[dict[str, Any]] = []
+        self._anchors_persisted: int = 0
 
     def append(self, entry_id: str, payload: Mapping[str, Any]) -> str:
         if not isinstance(entry_id, str) or not entry_id.strip():
@@ -78,6 +96,66 @@ class WORMLog:
             prev = digest
         return self._tail_hash == prev and self._entry_ids == seen_ids
 
+    # ---- External anchoring (Ed25519 commitment over the tail hash) ----
+
+    @property
+    def anchors(self) -> list[dict[str, Any]]:
+        return deepcopy(self._anchors)
+
+    def anchor(self, private_key: bytes) -> str:
+        """Sign the current tail hash with an operator Ed25519 key.
+
+        Returns the anchor id. Any append or rewrite after this point breaks
+        ``verify_anchor`` (the tail changes) until the chain is re-anchored.
+        """
+        key = ed25519.Ed25519PrivateKey.from_private_bytes(private_key)
+        anchor_id = f"anchor-{len(self._anchors) + 1}"
+        anchored_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        body = {
+            "anchor_id": anchor_id,
+            "algorithm": _ANCHOR_ALGORITHM,
+            "tail_hash": self._tail_hash,
+            "entry_count": len(self._entries),
+            "anchored_at": anchored_at,
+        }
+        signature = key.sign(canonical_digest(body).encode("utf-8"))
+        self._anchors.append({**body, "signature": signature.hex()})
+        return anchor_id
+
+    def verify_anchor(self, public_key: bytes) -> bool:
+        """Verify the latest anchor covers the CURRENT chain tail.
+
+        Returns True only if the chain is intact AND its tail is the exact tail
+        the operator signed. A rewritten or appended chain fails closed.
+        """
+        if not self._anchors:
+            return False
+        if not self.verify():
+            return False
+        latest = self._anchors[-1]
+        if latest.get("algorithm") != _ANCHOR_ALGORITHM:
+            return False
+        if latest.get("tail_hash") != self._tail_hash:
+            return False
+        if latest.get("entry_count") != len(self._entries):
+            return False
+        body = {
+            "anchor_id": latest["anchor_id"],
+            "algorithm": latest["algorithm"],
+            "tail_hash": latest["tail_hash"],
+            "entry_count": latest["entry_count"],
+            "anchored_at": latest["anchored_at"],
+        }
+        try:
+            public = ed25519.Ed25519PublicKey.from_public_bytes(public_key)
+            public.verify(
+                bytes.fromhex(latest["signature"]),
+                canonical_digest(body).encode("utf-8"),
+            )
+            return True
+        except (InvalidSignature, ValueError, KeyError):
+            return False
+
     def persist(self, path: Pathish | None = None) -> None:
         destination_value = path if path is not None else self.path
         if destination_value is None:
@@ -103,6 +181,16 @@ class WORMLog:
                 os.fsync(handle.fileno())
         self.path = os.fspath(destination)
 
+        anchors_path = Path(f"{destination}.anchors")
+        pending_anchors = self._anchors[self._anchors_persisted :]
+        if pending_anchors:
+            with anchors_path.open("ab") as handle:
+                for anchor in pending_anchors:
+                    handle.write(stable_json(anchor) + b"\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            self._anchors_persisted = len(self._anchors)
+
     @classmethod
     def load(cls, path: Pathish) -> WORMLog:
         source = Path(path)
@@ -115,6 +203,13 @@ class WORMLog:
         log._tail_hash = entries[-1].get("hash", _ZERO_HASH) if entries else _ZERO_HASH
         if not log.verify():
             raise WORMIntegrityError("ledger hash chain verification failed")
+
+        anchors_path = Path(f"{source}.anchors")
+        try:
+            log._anchors = cls._read_entries(anchors_path)
+            log._anchors_persisted = len(log._anchors)
+        except FileNotFoundError:
+            log._anchors = []
         return log
 
     @staticmethod

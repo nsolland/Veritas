@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Security :: Cryptography",
 ]
 
-dependencies = ["jsoncanon>=0.2.3"]
+dependencies = ["jsoncanon>=0.2.3", "cryptography>=41.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "ruff>=0.4", "mypy>=1.8"]

@@ -244,3 +244,89 @@ def test_cli_detects_tampered_ledger(tmp_path):
 
 def test_cli_missing_ledger_returns_2(tmp_path):
     assert cli_main([str(tmp_path / "missing.jsonl")]) == 2
+
+
+# ---- External anchoring ----
+
+def _ed25519_keypair():
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ed25519
+
+    private = ed25519.Ed25519PrivateKey.generate()
+    return (
+        private.private_bytes(
+            serialization.Encoding.Raw,
+            serialization.PrivateFormat.Raw,
+            serialization.NoEncryption(),
+        ),
+        private.public_key().public_bytes(
+            serialization.Encoding.Raw, serialization.PublicFormat.Raw
+        ),
+    )
+
+
+def test_anchor_commits_to_chain_tail():
+    private, public = _ed25519_keypair()
+    worm = WORMLog()
+    worm.append("e1", {"package_id": "pkg-1"})
+    anchor_id = worm.anchor(private)
+    assert anchor_id == "anchor-1"
+    assert worm.verify_anchor(public) is True
+
+
+def test_anchor_fails_after_rewrite():
+    private, public = _ed25519_keypair()
+    worm = WORMLog()
+    worm.append("e1", {"package_id": "pkg-1"})
+    worm.anchor(private)
+    assert worm.verify_anchor(public) is True
+
+    # Rewrite the ledger content: chain hashes are recomputable, so verify()
+    # passes, but the anchor over the original tail no longer matches.
+    entries = worm.read_all()
+    entries[0]["package_id"] = "tampered"
+    worm._entries = entries
+    assert worm.verify() is False  # accidental tamper detection
+    assert worm.verify_anchor(public) is False
+
+
+def test_anchor_invalidates_on_append():
+    private, public = _ed25519_keypair()
+    worm = WORMLog()
+    worm.append("e1", {"package_id": "pkg-1"})
+    worm.anchor(private)
+    assert worm.verify_anchor(public) is True
+    # A later receipt changes the tail: the old commitment no longer covers it.
+    worm.append("e2", {"package_id": "pkg-2"})
+    assert worm.verify_anchor(public) is False
+
+
+def test_anchor_wrong_key_rejected():
+    private, _ = _ed25519_keypair()
+    other_private, _ = _ed25519_keypair()
+    worm = WORMLog()
+    worm.append("e1", {"package_id": "pkg-1"})
+    worm.anchor(private)
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ed25519
+
+    public = (
+        ed25519.Ed25519PrivateKey.from_private_bytes(other_private)
+        .public_key()
+        .public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+    )
+    assert worm.verify_anchor(public) is False
+
+
+def test_anchor_persists_and_verifies_after_load(tmp_path):
+    private, public = _ed25519_keypair()
+    ledger = tmp_path / "anchored.jsonl"
+    worm = WORMLog()
+    worm.append("e1", {"package_id": "pkg-1"})
+    worm.anchor(private)
+    worm.persist(ledger)
+
+    loaded = WORMLog.load(ledger)
+    assert loaded.verify() is True
+    assert len(loaded.anchors) == 1
+    assert loaded.verify_anchor(public) is True
