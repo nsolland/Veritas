@@ -1,13 +1,13 @@
 """Tests for Veritas contracts, WORM chain and chain service."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 from veritas.contracts import (
     CompletedEvidencePackageV1,
-    ObservedEventV1,
     ObservationPackageV1,
+    ObservedEventV1,
     StoredEvidenceReportV1,
 )
 from veritas.digest import canonical_digest
@@ -24,7 +24,7 @@ def _event(event_id: str = "ev-1") -> ObservedEventV1:
         event_id=event_id,
         source_id="source-1",
         event_type="observation",
-        observed_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        observed_at=datetime(2026, 8, 5, tzinfo=UTC),
         payload_digest=_digest(),
         provenance={"source_url": "https://example.invalid/x"},
     )
@@ -66,7 +66,7 @@ def test_completed_evidence_rejects_analysis_fields():
             observation_package_ref="pkg-1",
             completion=completion,
             iteration=1,
-            recorded_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+            recorded_at=datetime(2026, 8, 5, tzinfo=UTC),
         ).to_payload()
 
 
@@ -106,7 +106,7 @@ def test_chain_service_records_and_verifies():
         evidence_chain=[
             {"artifact_ref": "pkg-1", "artifact_digest": _digest()},
         ],
-        stored_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        stored_at=datetime(2026, 8, 5, tzinfo=UTC),
     )
     service.store_evidence_report(report)
     assert service.verify_chain() is True

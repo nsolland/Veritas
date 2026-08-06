@@ -6,7 +6,8 @@ meaning. It does not analyse, classify, conclude or authorize.
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from veritas.contracts import (
     CompletedEvidencePackageV1,

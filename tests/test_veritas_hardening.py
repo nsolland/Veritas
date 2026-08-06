@@ -1,7 +1,7 @@
 """Veritas hardening tests: fail-closed digests, determinism, lifecycle, CLI."""
 
-from datetime import datetime, timezone
 import json
+from datetime import UTC, datetime
 
 import pytest
 
@@ -9,8 +9,8 @@ from veritas.cli import main as cli_main
 from veritas.contracts import (
     CompletedEvidencePackageV1,
     FinalEvidenceBindingV1,
-    ObservedEventV1,
     ObservationPackageV1,
+    ObservedEventV1,
     StoredEvidenceReportV1,
     VeritasContractError,
 )
@@ -28,7 +28,7 @@ def _event(event_id: str = "ev-1") -> ObservedEventV1:
         event_id=event_id,
         source_id="source-1",
         event_type="observation",
-        observed_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        observed_at=datetime(2026, 8, 5, tzinfo=UTC),
         payload_digest=_digest(),
         provenance={"source_url": "https://example.invalid/x"},
     )
@@ -60,7 +60,7 @@ def _completed() -> CompletedEvidencePackageV1:
             "observations": ["ok"],
         },
         iteration=1,
-        recorded_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        recorded_at=datetime(2026, 8, 5, tzinfo=UTC),
     )
 
 
@@ -79,7 +79,7 @@ def _report() -> StoredEvidenceReportV1:
             "observations": [],
         },
         evidence_chain=[{"artifact_ref": "pkg-1", "artifact_digest": _digest()}],
-        stored_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        stored_at=datetime(2026, 8, 5, tzinfo=UTC),
     )
 
 
@@ -96,7 +96,7 @@ def _binding() -> FinalEvidenceBindingV1:
         evidence_report_digest=_digest(),
         evidence_chain_head_ref="chain-head-1",
         evidence_chain_head_digest=_digest(),
-        bound_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        bound_at=datetime(2026, 8, 5, tzinfo=UTC),
     )
 
 
@@ -105,7 +105,7 @@ def _binding() -> FinalEvidenceBindingV1:
 
 def test_stable_json_fails_closed_on_non_canonical_content():
     with pytest.raises(TypeError):
-        stable_json({"at": datetime(2026, 8, 5, tzinfo=timezone.utc)})
+        stable_json({"at": datetime(2026, 8, 5, tzinfo=UTC)})
     with pytest.raises(TypeError):
         canonical_digest({"obj": object()})
 
@@ -238,8 +238,7 @@ def test_cli_detects_tampered_ledger(tmp_path):
     ]
     entries[0]["package_id"] = "tampered"
     with open(ledger, "w") as fh:
-        for entry in entries:
-            fh.write(json.dumps(entry, sort_keys=True) + "\n")
+        fh.writelines(json.dumps(entry, sort_keys=True) + "\n" for entry in entries)
     assert cli_main([str(ledger)]) == 1
 
 
