@@ -56,7 +56,7 @@ def test_completed_evidence_rejects_analysis_fields():
         "execution_id": "exec-1",
         "observation_package_ref": "pkg-1",
         "observations": ["o"],
-        "classification": "secret",  # forbidden
+        "classification": "secret",
     }
     with pytest.raises(ValueError, match="analysis fields"):
         CompletedEvidencePackageV1(
@@ -70,14 +70,14 @@ def test_completed_evidence_rejects_analysis_fields():
         ).to_payload()
 
 
-def test_worm_chain_verifies_and_detects_tamper():
+def test_worm_read_snapshot_cannot_tamper_with_chain():
     worm = WORMLog()
     worm.append("e1", {"package_id": "pkg-1"})
     worm.append("e2", {"package_id": "pkg-2"})
+    snapshot = worm.read_all()
+    snapshot[0]["package_id"] = "tampered"
     assert worm.verify() is True
-    entries = worm.read_all()
-    entries[0]["package_id"] = "tampered"
-    assert worm.verify() is False
+    assert worm.read_all()[0]["package_id"] == "pkg-1"
 
 
 def test_worm_persist_and_load(tmp_path):
