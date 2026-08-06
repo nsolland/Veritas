@@ -26,7 +26,9 @@ class VeritasChainService:
 
     def __init__(self, worm: WORMLog) -> None:
         self.worm = worm
-        self._sequence = 0
+        # Continue the advisory sequence from an existing ledger so reloading a
+        # service never re-numbers entries already committed to the chain.
+        self._sequence = len(worm.read_all())
 
     @staticmethod
     def _next_entry_id(prefix: str, record_id: str) -> str:

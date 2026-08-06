@@ -1,29 +1,29 @@
 """Canonical digest helpers for Veritas.
 
-Deterministic SHA-256 over a stable JSON serialization, so receipts are
-byte-identical across runs and languages.
+Strict RFC 8785 (JCS) canonicalization via ``jsoncanon``, so receipts are
+byte-identical across runs and languages — the receipt layer's core promise.
+
+Non-canonicalizable content (e.g. ``datetime`` objects, custom types) raises
+``TypeError`` instead of being silently ``str()``-ed: a receipt that cannot be
+canonically hashed must fail closed, never become an implementation-specific
+digest.
 """
 
 from __future__ import annotations
 
 import hashlib
-import json
-from typing import Any
+from typing import Any, cast
 
-CANONICALIZATION_ALGORITHM = "sha256-stable-json"
+from jsoncanon import canonicalize
+
+CANONICALIZATION_ALGORITHM = "sha256-rfc8785-json"
 
 
 def canonical_digest(value: Any) -> str:
-    """Return ``sha256:<hex>`` over the stable-JSON serialization of ``value``."""
-    return "sha256:" + hashlib.sha256(stable_json(value).encode("utf-8")).hexdigest()
+    """Return ``sha256:<hex>`` over the RFC 8785 canonical form of ``value``."""
+    return "sha256:" + hashlib.sha256(canonicalize(value)).hexdigest()
 
 
-def stable_json(value: Any) -> str:
-    """Recursively serialize JSON with sorted keys, compact separators."""
-    return json.dumps(
-        value,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        default=str,
-    )
+def stable_json(value: Any) -> bytes:
+    """Return the RFC 8785 (JCS) canonical serialization of ``value`` (bytes)."""
+    return cast(bytes, canonicalize(value))
