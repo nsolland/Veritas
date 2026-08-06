@@ -12,7 +12,7 @@ from collections.abc import Mapping
 from copy import deepcopy
 from os import PathLike
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, cast
 
 from veritas.digest import canonical_digest, stable_json
 
@@ -131,9 +131,12 @@ class WORMLog:
         log = cls(path=source)
         log._entries = entries
         log._entry_ids = {
-            entry["id"] for entry in entries if isinstance(entry.get("id"), str)
+            entry_id
+            for entry in entries
+            if isinstance((entry_id := entry.get("id")), str)
         }
-        log._tail_hash = entries[-1].get("hash", _ZERO_HASH) if entries else _ZERO_HASH
+        tail_hash = entries[-1].get("hash", _ZERO_HASH) if entries else _ZERO_HASH
+        log._tail_hash = tail_hash if isinstance(tail_hash, str) else _ZERO_HASH
         if not log.verify():
             raise WORMIntegrityError("ledger hash chain verification failed")
         return log
@@ -148,16 +151,18 @@ class WORMLog:
                     if not stripped:
                         continue
                     try:
-                        entry = json.loads(stripped)
+                        decoded = json.loads(stripped)
                     except json.JSONDecodeError as exc:
                         raise WORMIntegrityError(
                             f"invalid ledger JSON at line {line_number}"
                         ) from exc
-                    if not isinstance(entry, dict):
+                    if not isinstance(decoded, dict):
                         raise WORMIntegrityError(
                             f"ledger entry at line {line_number} must be an object"
                         )
-                    entries.append(entry)
+                    entries.append(cast(dict[str, Any], decoded))
+        except FileNotFoundError:
+            raise
         except OSError as exc:
             raise WORMIntegrityError(f"unable to read ledger: {path}") from exc
         return entries
