@@ -3,8 +3,8 @@
 from veritas.contracts import (
     CompletedEvidencePackageV1,
     FinalEvidenceBindingV1,
-    ObservedEventV1,
     ObservationPackageV1,
+    ObservedEventV1,
     StoredEvidenceReportV1,
 )
 from veritas.digest import (
@@ -23,8 +23,8 @@ __all__ = [
     "CanonicalizationError",
     "CompletedEvidencePackageV1",
     "FinalEvidenceBindingV1",
-    "ObservedEventV1",
     "ObservationPackageV1",
+    "ObservedEventV1",
     "StoredEvidenceReportV1",
     "VeritasChainError",
     "VeritasChainService",

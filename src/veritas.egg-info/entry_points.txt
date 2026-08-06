@@ -1,0 +1,2 @@
+[console_scripts]
+veritas-verify = veritas.cli:main

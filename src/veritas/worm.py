@@ -8,10 +8,11 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Mapping
 from copy import deepcopy
 from os import PathLike
 from pathlib import Path
-from typing import Any, Final, Mapping
+from typing import Any, Final
 
 from veritas.digest import canonical_digest, stable_json
 
@@ -123,7 +124,7 @@ class WORMLog:
         self.path = os.fspath(destination)
 
     @classmethod
-    def load(cls, path: Pathish) -> "WORMLog":
+    def load(cls, path: Pathish) -> WORMLog:
         source = Path(path)
         entries = cls._read_entries(source)
 

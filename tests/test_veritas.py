@@ -9,8 +9,8 @@ import pytest
 
 from veritas.contracts import (
     CompletedEvidencePackageV1,
-    ObservedEventV1,
     ObservationPackageV1,
+    ObservedEventV1,
     StoredEvidenceReportV1,
 )
 from veritas.digest import CanonicalizationError, canonical_digest

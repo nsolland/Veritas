@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+src/veritas/__init__.py
+src/veritas/cli.py
+src/veritas/contracts.py
+src/veritas/digest.py
+src/veritas/service.py
+src/veritas/worm.py
+src/veritas.egg-info/PKG-INFO
+src/veritas.egg-info/SOURCES.txt
+src/veritas.egg-info/dependency_links.txt
+src/veritas.egg-info/entry_points.txt
+src/veritas.egg-info/requires.txt
+src/veritas.egg-info/top_level.txt
+tests/test_veritas.py
