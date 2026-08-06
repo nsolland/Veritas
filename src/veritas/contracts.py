@@ -6,9 +6,10 @@ conclude what the observations mean.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Mapping, Sequence
+from datetime import UTC, datetime
+from typing import Any
 
 
 class VeritasContractError(ValueError):
@@ -52,7 +53,7 @@ class ObservationPackageV1:
     handoff_digest: str
     observed_events: Sequence[ObservedEventV1]
     unavailable_sources: Sequence[str] = field(default_factory=tuple)
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_payload(self) -> dict[str, Any]:
         for name, value in {
@@ -138,7 +139,7 @@ class StoredEvidenceReportV1:
     observation_package_digest: str
     report: Mapping[str, Any]
     evidence_chain: Sequence[Mapping[str, str]] = field(default_factory=tuple)
-    stored_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    stored_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_payload(self) -> dict[str, Any]:
         for name, value in {
@@ -251,4 +252,4 @@ def _require_digest(name: str, value: object) -> None:
 def _timestamp(value: datetime) -> str:
     if value.tzinfo is None or value.utcoffset() is None:
         raise VeritasContractError("timestamp must be timezone-aware")
-    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")

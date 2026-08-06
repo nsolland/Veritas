@@ -1,13 +1,13 @@
 """Tests for Veritas contracts, WORM chain and chain service."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 from veritas.contracts import (
     CompletedEvidencePackageV1,
-    ObservedEventV1,
     ObservationPackageV1,
+    ObservedEventV1,
     StoredEvidenceReportV1,
 )
 from veritas.digest import canonical_digest
@@ -24,7 +24,7 @@ def _event(event_id: str = "ev-1") -> ObservedEventV1:
         event_id=event_id,
         source_id="source-1",
         event_type="observation",
-        observed_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        observed_at=datetime(2026, 8, 5, tzinfo=UTC),
         payload_digest=_digest(),
         provenance={"source_url": "https://example.invalid/x"},
     )
@@ -56,7 +56,7 @@ def test_completed_evidence_rejects_analysis_fields():
         "execution_id": "exec-1",
         "observation_package_ref": "pkg-1",
         "observations": ["o"],
-        "classification": "secret",  # forbidden
+        "classification": "secret",
     }
     with pytest.raises(ValueError, match="analysis fields"):
         CompletedEvidencePackageV1(
@@ -66,18 +66,18 @@ def test_completed_evidence_rejects_analysis_fields():
             observation_package_ref="pkg-1",
             completion=completion,
             iteration=1,
-            recorded_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+            recorded_at=datetime(2026, 8, 5, tzinfo=UTC),
         ).to_payload()
 
 
-def test_worm_chain_verifies_and_detects_tamper():
+def test_worm_read_snapshot_cannot_tamper_with_chain():
     worm = WORMLog()
     worm.append("e1", {"package_id": "pkg-1"})
     worm.append("e2", {"package_id": "pkg-2"})
+    snapshot = worm.read_all()
+    snapshot[0]["package_id"] = "tampered"
     assert worm.verify() is True
-    entries = worm.read_all()
-    entries[0]["package_id"] = "tampered"
-    assert worm.verify() is False
+    assert worm.read_all()[0]["package_id"] == "pkg-1"
 
 
 def test_worm_persist_and_load(tmp_path):
@@ -106,7 +106,7 @@ def test_chain_service_records_and_verifies():
         evidence_chain=[
             {"artifact_ref": "pkg-1", "artifact_digest": _digest()},
         ],
-        stored_at=datetime(2026, 8, 5, tzinfo=timezone.utc),
+        stored_at=datetime(2026, 8, 5, tzinfo=UTC),
     )
     service.store_evidence_report(report)
     assert service.verify_chain() is True

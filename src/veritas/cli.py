@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Sequence
+from collections.abc import Sequence
 
-from veritas.worm import WORMLog
+from veritas.worm import WORMIntegrityError, WORMLog
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -21,11 +21,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     except FileNotFoundError:
         print(f"ledger not found: {args.ledger}", file=sys.stderr)
         return 2
-    if log.verify():
-        print(f"VERITAS OK: {len(log.read_all())} entries, chain intact.")
-        return 0
-    print("VERITAS FAILED: chain integrity broken.", file=sys.stderr)
-    return 1
+    except WORMIntegrityError as exc:
+        print(f"VERITAS FAILED: {exc}", file=sys.stderr)
+        return 1
+    print(f"VERITAS OK: {len(log.read_all())} entries, chain intact.")
+    return 0
 
 
 if __name__ == "__main__":
