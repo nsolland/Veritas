@@ -11,7 +11,8 @@
   - `.claims/agent-skills-binding-v1.md`
   - `src/veritas/contracts.py`
   - `tests/test_veritas.py`
-  - `src/veritas/worm.py` (single pre-existing Ruff blocker required by the active CI gate)
+  - `src/veritas/worm.py` (pre-existing Ruff blocker required by the active CI gate)
+  - `src/veritas/digest.py` (pre-existing mypy blockers required by the active CI gate)
 - Dependencies: REHT/Gateway `skill_binding_digest` in RACS `sha256:<hex>` form and existing RFC 8785/WORM receipt chain
 - Verification: UNVERIFIED until hosted checks complete
 - Non-goals: skill admissibility, skill discovery/loading, authority, policy evaluation, or execution
