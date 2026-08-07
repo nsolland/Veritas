@@ -9,7 +9,7 @@ repository:
   classification: receipt
   role: "LA6 — receipt layer: attest observations and follow-on receipts without interpreting"
   status: active
-  visibility: public
+  visibility: private
   maturity: active-development
   support: maintained
   normative_status: normative-specification
