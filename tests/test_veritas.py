@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 import pytest
 
 from veritas.contracts import (
+    BoundaryNegativeEvidenceV1,
     CompletedEvidencePackageV1,
     ObservationPackageV1,
     ObservedEventV1,
@@ -44,6 +45,30 @@ def _package(skill_binding_digest: str | None = None) -> ObservationPackageV1:
     )
 
 
+def _negative_evidence(
+    *,
+    enforcement_ref: str = "racs-enforcement-1",
+    boundary_digest: str | None = None,
+) -> BoundaryNegativeEvidenceV1:
+    return BoundaryNegativeEvidenceV1(
+        evidence_id="neg-1",
+        tenant_id="tenant-1",
+        execution_id="exec-1",
+        authorization_ref="reht-clearance-1",
+        authorization_digest=_digest(),
+        boundary_ref="execution-boundary-1",
+        boundary_digest=boundary_digest or _digest(),
+        enforcement_ref=enforcement_ref,
+        enforcement_digest=_digest(),
+        coverage_ref="coverage-attestation-1",
+        coverage_digest=_digest(),
+        excluded_action={"action_class": "patient_record.read", "target": "patient-7"},
+        window_start=datetime(2026, 8, 5, 10, 0, tzinfo=UTC),
+        window_end=datetime(2026, 8, 5, 10, 5, tzinfo=UTC),
+        recorded_at=datetime(2026, 8, 5, 10, 6, tzinfo=UTC),
+    )
+
+
 def test_observation_package_round_trip():
     payload = _package().to_payload()
     assert payload["package_id"] == "pkg-1"
@@ -67,6 +92,52 @@ def test_agent_skill_binding_changes_canonical_receipt_digest():
     legacy = canonical_digest(_package().to_payload())
     bound = canonical_digest(_package("sha256:" + "b" * 64).to_payload())
     assert legacy != bound
+
+
+def test_negative_evidence_is_explicitly_boundary_derived():
+    payload = _negative_evidence().to_payload()
+    assert payload["negative_evidence_basis"] == "enforced_boundary"
+    assert payload["authorization_ref"] == "reht-clearance-1"
+    assert payload["boundary_ref"] == "execution-boundary-1"
+    assert payload["enforcement_ref"] == "racs-enforcement-1"
+    assert payload["coverage_ref"] == "coverage-attestation-1"
+    assert payload["excluded_action"]["action_class"] == "patient_record.read"
+
+
+def test_negative_evidence_rejects_missing_enforcement_binding():
+    with pytest.raises(ValueError, match="enforcement_ref"):
+        _negative_evidence(enforcement_ref="").to_payload()
+
+
+def test_negative_evidence_rejects_invalid_window():
+    evidence = _negative_evidence()
+    invalid = BoundaryNegativeEvidenceV1(
+        evidence_id=evidence.evidence_id,
+        tenant_id=evidence.tenant_id,
+        execution_id=evidence.execution_id,
+        authorization_ref=evidence.authorization_ref,
+        authorization_digest=evidence.authorization_digest,
+        boundary_ref=evidence.boundary_ref,
+        boundary_digest=evidence.boundary_digest,
+        enforcement_ref=evidence.enforcement_ref,
+        enforcement_digest=evidence.enforcement_digest,
+        coverage_ref=evidence.coverage_ref,
+        coverage_digest=evidence.coverage_digest,
+        excluded_action=evidence.excluded_action,
+        window_start=evidence.window_end,
+        window_end=evidence.window_start,
+        recorded_at=evidence.recorded_at,
+    )
+    with pytest.raises(ValueError, match="window_end"):
+        invalid.to_payload()
+
+
+def test_negative_evidence_digest_changes_with_boundary():
+    first = canonical_digest(_negative_evidence().to_payload())
+    second = canonical_digest(
+        _negative_evidence(boundary_digest="sha256:" + "b" * 64).to_payload()
+    )
+    assert first != second
 
 
 def test_completed_evidence_rejects_analysis_fields():
@@ -113,6 +184,7 @@ def test_chain_service_records_and_verifies():
     worm = WORMLog()
     service = VeritasChainService(worm)
     service.store_observation_package(_package())
+    service.store_boundary_negative_evidence(_negative_evidence())
     report = StoredEvidenceReportV1(
         report_id="rep-1",
         tenant_id="t",
@@ -130,4 +202,5 @@ def test_chain_service_records_and_verifies():
     service.store_evidence_report(report)
     assert service.verify_chain() is True
     assert service.find_entry("pkg-1") is not None
+    assert service.find_entry("neg-1") is not None
     assert service.find_entry("rep-1") is not None

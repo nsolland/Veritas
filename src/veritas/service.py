@@ -10,6 +10,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from veritas.contracts import (
+    BoundaryNegativeEvidenceV1,
     CompletedEvidencePackageV1,
     FinalEvidenceBindingV1,
     ObservationPackageV1,
@@ -43,6 +44,16 @@ class VeritasChainService:
             self._next_entry_id("obs-pkg", package.package_id), payload
         )
 
+    def store_boundary_negative_evidence(
+        self, evidence: BoundaryNegativeEvidenceV1
+    ) -> str:
+        payload = evidence.to_payload()
+        self._sequence += 1
+        payload["sequence"] = self._sequence
+        return self.worm.append(
+            self._next_entry_id("negative-evidence", evidence.evidence_id), payload
+        )
+
     def store_completed_evidence(self, package: CompletedEvidencePackageV1) -> str:
         payload = package.to_payload()
         self._sequence += 1
@@ -72,10 +83,11 @@ class VeritasChainService:
         return self.worm.verify()
 
     def find_entry(self, record_id: str) -> Mapping[str, Any] | None:
-        """Return the entry whose ``record_id`` is stored under ``record_id``."""
+        """Return the entry whose stable record identifier matches ``record_id``."""
         for entry in self.worm.read_all():
             if record_id in (
                 entry.get("package_id"),
+                entry.get("evidence_id"),
                 entry.get("record_id"),
                 entry.get("report_id"),
                 entry.get("follow_on_id"),

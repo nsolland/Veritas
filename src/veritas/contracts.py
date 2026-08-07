@@ -90,6 +90,77 @@ class ObservationPackageV1:
 
 
 @dataclass(frozen=True)
+class BoundaryNegativeEvidenceV1:
+    """Evidence that a scoped action was excluded by an enforced boundary.
+
+    This contract never infers a non-event from missing observations. The
+    supplied evidence must instead bind the claimed exclusion to an
+    authorization, boundary definition, enforcement record, and coverage
+    record for an explicit time window.
+    """
+
+    evidence_id: str
+    tenant_id: str
+    execution_id: str
+    authorization_ref: str
+    authorization_digest: str
+    boundary_ref: str
+    boundary_digest: str
+    enforcement_ref: str
+    enforcement_digest: str
+    coverage_ref: str
+    coverage_digest: str
+    excluded_action: Mapping[str, Any]
+    window_start: datetime
+    window_end: datetime
+    recorded_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+    def to_payload(self) -> dict[str, Any]:
+        for name, value in {
+            "evidence_id": self.evidence_id,
+            "tenant_id": self.tenant_id,
+            "execution_id": self.execution_id,
+            "authorization_ref": self.authorization_ref,
+            "boundary_ref": self.boundary_ref,
+            "enforcement_ref": self.enforcement_ref,
+            "coverage_ref": self.coverage_ref,
+        }.items():
+            _require_text(name, value)
+        for name, value in {
+            "authorization_digest": self.authorization_digest,
+            "boundary_digest": self.boundary_digest,
+            "enforcement_digest": self.enforcement_digest,
+            "coverage_digest": self.coverage_digest,
+        }.items():
+            _require_digest(name, value)
+        excluded_action = dict(self.excluded_action)
+        if not excluded_action:
+            raise VeritasContractError("excluded_action must not be empty")
+        window_start = _timestamp(self.window_start)
+        window_end = _timestamp(self.window_end)
+        if self.window_end <= self.window_start:
+            raise VeritasContractError("window_end must be after window_start")
+        return {
+            "evidence_id": self.evidence_id,
+            "tenant_id": self.tenant_id,
+            "execution_id": self.execution_id,
+            "negative_evidence_basis": "enforced_boundary",
+            "authorization_ref": self.authorization_ref,
+            "authorization_digest": self.authorization_digest,
+            "boundary_ref": self.boundary_ref,
+            "boundary_digest": self.boundary_digest,
+            "enforcement_ref": self.enforcement_ref,
+            "enforcement_digest": self.enforcement_digest,
+            "coverage_ref": self.coverage_ref,
+            "coverage_digest": self.coverage_digest,
+            "excluded_action": excluded_action,
+            "window_start": window_start,
+            "window_end": window_end,
+            "recorded_at": _timestamp(self.recorded_at),
+        }
+
+
+@dataclass(frozen=True)
 class CompletedEvidencePackageV1:
     record_id: str
     tenant_id: str

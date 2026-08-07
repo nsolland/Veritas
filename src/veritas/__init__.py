@@ -1,6 +1,7 @@
 """Veritas — VALO receipt layer (LA6)."""
 
 from veritas.contracts import (
+    BoundaryNegativeEvidenceV1,
     CompletedEvidencePackageV1,
     FinalEvidenceBindingV1,
     ObservationPackageV1,
@@ -15,6 +16,7 @@ __version__ = "0.1.0"
 
 __all__ = [
     "CANONICALIZATION_ALGORITHM",
+    "BoundaryNegativeEvidenceV1",
     "CompletedEvidencePackageV1",
     "FinalEvidenceBindingV1",
     "ObservationPackageV1",

@@ -18,6 +18,10 @@ authorization and evidence chain.
 
 - **Attest, don't interpret.** Veritas rejects analysis fields (`classification`,
   `conclusion`, `evidence_sufficient`) in completed evidence.
+- **Negative evidence is boundary-derived.** Missing observations or missing log
+  entries are never proof that an action did not occur. Negative evidence must
+  bind the excluded action to an authorization, enforced execution boundary,
+  enforcement record, coverage attestation, and explicit time window.
 - **Append-only WORM.** Every receipt links to the previous via a canonical
   SHA-256 digest; any modification breaks the chain.
 - **Deterministic digests.** RFC-8785-style stable JSON → SHA-256, so receipts
@@ -29,6 +33,8 @@ authorization and evidence chain.
 
 - `ObservedEventV1` — a single observed event with provenance
 - `ObservationPackageV1` — a governed observation package
+- `BoundaryNegativeEvidenceV1` — boundary-derived negative evidence; never
+  inferred from absence of observations
 - `CompletedEvidencePackageV1` — completed evidence (rejects analysis fields)
 - `StoredEvidenceReportV1` — stored evidence report bound to a chain
 - `FinalEvidenceBindingV1` — final follow-on evidence binding
