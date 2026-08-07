@@ -30,7 +30,7 @@ def _event(event_id: str = "ev-1") -> ObservedEventV1:
     )
 
 
-def _package() -> ObservationPackageV1:
+def _package(skill_binding_digest: str | None = None) -> ObservationPackageV1:
     return ObservationPackageV1(
         package_id="pkg-1",
         tenant_id="tenant-1",
@@ -40,6 +40,7 @@ def _package() -> ObservationPackageV1:
         handoff_ref="handoff-ref-1",
         handoff_digest=_digest(),
         observed_events=[_event()],
+        skill_binding_digest=skill_binding_digest,
     )
 
 
@@ -48,6 +49,24 @@ def test_observation_package_round_trip():
     assert payload["package_id"] == "pkg-1"
     assert payload["observed_events"][0]["event_id"] == "ev-1"
     assert len(payload["observed_events"]) == 1
+    assert "skill_binding_digest" not in payload
+
+
+def test_observation_package_attests_agent_skill_binding():
+    skill_binding = "sha256:" + "a" * 64
+    payload = _package(skill_binding).to_payload()
+    assert payload["skill_binding_digest"] == skill_binding
+
+
+def test_observation_package_rejects_invalid_agent_skill_binding():
+    with pytest.raises(ValueError, match="skill_binding_digest"):
+        _package("sha256:" + "a" * 63).to_payload()
+
+
+def test_agent_skill_binding_changes_canonical_receipt_digest():
+    legacy = canonical_digest(_package().to_payload())
+    bound = canonical_digest(_package("sha256:" + "b" * 64).to_payload())
+    assert legacy != bound
 
 
 def test_completed_evidence_rejects_analysis_fields():
