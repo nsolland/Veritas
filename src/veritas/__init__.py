@@ -1,6 +1,7 @@
 """Veritas — VALO receipt layer (LA6)."""
 
 from veritas.contracts import (
+    BoundaryNegativeEvidenceV1,
     CompletedEvidencePackageV1,
     FinalEvidenceBindingV1,
     ObservationPackageV1,
@@ -14,6 +15,7 @@ from veritas.worm import WORMIntegrityError, WORMLog
 __version__ = "0.1.0"
 
 __all__ = [
+    "BoundaryNegativeEvidenceV1",
     "CANONICALIZATION_ALGORITHM",
     "CompletedEvidencePackageV1",
     "FinalEvidenceBindingV1",

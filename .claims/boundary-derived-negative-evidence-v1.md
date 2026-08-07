@@ -4,7 +4,7 @@
 - Repository: `nsolland/Veritas`
 - Canonical base SHA: `a47d1bef01e163a9554607a9b7cc5a26f2089420`
 - Branch: `feat/boundary-derived-negative-evidence`
-- Draft PR: pending
+- Draft PR: `#5`
 - Delivery: make negative evidence admissible only when it is bound to an enforced execution boundary, never merely inferred from missing observations
 - Owned files:
   - `.claims/boundary-derived-negative-evidence-v1.md`
