@@ -16,7 +16,7 @@ import json
 import os
 from collections.abc import Mapping
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from os import PathLike
 from pathlib import Path
 from typing import Any, Final
@@ -109,7 +109,7 @@ class WORMLog:
         """
         key = ed25519.Ed25519PrivateKey.from_private_bytes(private_key)
         anchor_id = f"anchor-{len(self._anchors) + 1}"
-        anchored_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        anchored_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
         body = {
             "anchor_id": anchor_id,
             "algorithm": _ANCHOR_ALGORITHM,

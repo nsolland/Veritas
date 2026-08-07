@@ -52,6 +52,7 @@ class ObservationPackageV1:
     handoff_ref: str
     handoff_digest: str
     observed_events: Sequence[ObservedEventV1]
+    skill_binding_digest: str | None = None
     unavailable_sources: Sequence[str] = field(default_factory=tuple)
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
@@ -66,10 +67,12 @@ class ObservationPackageV1:
             _require_text(name, value)
         _require_digest("authorization_digest", self.authorization_digest)
         _require_digest("handoff_digest", self.handoff_digest)
+        if self.skill_binding_digest is not None:
+            _require_digest("skill_binding_digest", self.skill_binding_digest)
         events = [event.to_dict() for event in self.observed_events]
         if len({event["event_id"] for event in events}) != len(events):
             raise VeritasContractError("observed event ids must be unique")
-        return {
+        payload = {
             "package_id": self.package_id,
             "tenant_id": self.tenant_id,
             "execution_id": self.execution_id,
@@ -81,6 +84,9 @@ class ObservationPackageV1:
             "unavailable_sources": sorted(set(self.unavailable_sources)),
             "created_at": _timestamp(self.created_at),
         }
+        if self.skill_binding_digest is not None:
+            payload["skill_binding_digest"] = self.skill_binding_digest
+        return payload
 
 
 @dataclass(frozen=True)
