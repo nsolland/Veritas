@@ -15,8 +15,8 @@ from veritas.worm import WORMIntegrityError, WORMLog
 __version__ = "0.1.0"
 
 __all__ = [
-    "BoundaryNegativeEvidenceV1",
     "CANONICALIZATION_ALGORITHM",
+    "BoundaryNegativeEvidenceV1",
     "CompletedEvidencePackageV1",
     "FinalEvidenceBindingV1",
     "ObservationPackageV1",
