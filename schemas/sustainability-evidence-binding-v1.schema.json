@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veritas.example/schemas/sustainability-evidence-binding-v1.schema.json",
+  "title": "SustainabilityEvidenceBindingV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "artifact_id", "artifact_type", "tenant_id", "entity_id", "period_id", "payload_digest"],
+  "properties": {
+    "schema": { "const": "sustainability-evidence-binding.v1" },
+    "artifact_id": { "type": "string", "minLength": 1 },
+    "artifact_type": { "type": "string", "minLength": 1 },
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "entity_id": { "type": "string", "minLength": 1 },
+    "period_id": { "type": "string", "minLength": 1 },
+    "payload_digest": { "type": "string", "minLength": 1 },
+    "prior_ref": { "type": "string" }
+  }
+}
