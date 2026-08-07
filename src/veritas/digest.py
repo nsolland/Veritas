@@ -12,18 +12,21 @@ digest.
 from __future__ import annotations
 
 import hashlib
-from typing import Any, cast
+from typing import Any
 
-from jsoncanon import canonicalize
+from jsoncanon import canonicalize  # type: ignore[attr-defined]
 
 CANONICALIZATION_ALGORITHM = "sha256-rfc8785-json"
 
 
 def canonical_digest(value: Any) -> str:
     """Return ``sha256:<hex>`` over the RFC 8785 canonical form of ``value``."""
-    return "sha256:" + hashlib.sha256(canonicalize(value)).hexdigest()
+    return "sha256:" + hashlib.sha256(stable_json(value)).hexdigest()
 
 
 def stable_json(value: Any) -> bytes:
     """Return the RFC 8785 (JCS) canonical serialization of ``value`` (bytes)."""
-    return cast(bytes, canonicalize(value))
+    encoded = canonicalize(value)
+    if not isinstance(encoded, bytes):
+        raise TypeError("jsoncanon canonicalize must return bytes")
+    return encoded
