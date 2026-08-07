@@ -14,5 +14,5 @@
   - `src/veritas/worm.py` (pre-existing Ruff blocker required by the active CI gate)
   - `src/veritas/digest.py` (pre-existing mypy blockers required by the active CI gate)
 - Dependencies: REHT/Gateway `skill_binding_digest` in RACS `sha256:<hex>` form and existing RFC 8785/WORM receipt chain
-- Verification: UNVERIFIED until hosted checks complete
+- Verification: HOSTED_CI_GREEN on head `2b4d2442ec0f7bae9f3695387cb3b3769f78885d`, Veritas CI run `31165545825`; this claim-only update requires the normal final PR check before merge
 - Non-goals: skill admissibility, skill discovery/loading, authority, policy evaluation, or execution
