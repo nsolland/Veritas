@@ -38,6 +38,10 @@ authorization and evidence chain.
 - `CompletedEvidencePackageV1` — completed evidence (rejects analysis fields)
 - `StoredEvidenceReportV1` — stored evidence report bound to a chain
 - `FinalEvidenceBindingV1` — final follow-on evidence binding
+- `ReceiptArchiveRecordV1` — immutable local-first receipt archive record
+- `AccessibleReceiptArchiver` — append-only, local-first receipt/warranty
+  archive with a verifiable Veritas chain binding (never grants clearance or
+  execution authority)
 
 ## Quick start
 
