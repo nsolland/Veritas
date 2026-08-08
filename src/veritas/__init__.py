@@ -9,6 +9,13 @@ from veritas.contracts import (
     StoredEvidenceReportV1,
 )
 from veritas.digest import CANONICALIZATION_ALGORITHM, canonical_digest, stable_json
+from veritas.receipt_archive import (
+    LocalReceiptArchive,
+    ReceiptArchiveBindingV1,
+    ReceiptArchiveDeletionV1,
+    ReceiptArchiveRecordV1,
+    ReceiptArchiveService,
+)
 from veritas.service import VeritasChainError, VeritasChainService
 from veritas.worm import WORMIntegrityError, WORMLog
 
@@ -19,8 +26,13 @@ __all__ = [
     "BoundaryNegativeEvidenceV1",
     "CompletedEvidencePackageV1",
     "FinalEvidenceBindingV1",
+    "LocalReceiptArchive",
     "ObservationPackageV1",
     "ObservedEventV1",
+    "ReceiptArchiveBindingV1",
+    "ReceiptArchiveDeletionV1",
+    "ReceiptArchiveRecordV1",
+    "ReceiptArchiveService",
     "StoredEvidenceReportV1",
     "VeritasChainError",
     "VeritasChainService",
