@@ -61,7 +61,7 @@ class GatewayExecutionObservationV1:
     payload: Mapping[str, Any]
 
     @classmethod
-    def verify(cls, payload: Mapping[str, Any]) -> "GatewayExecutionObservationV1":
+    def verify(cls, payload: Mapping[str, Any]) -> GatewayExecutionObservationV1:
         data = dict(payload)
         if data.get("schema") != _SCHEMA:
             raise GatewayExecutionObservationError("unsupported Gateway observation schema")
