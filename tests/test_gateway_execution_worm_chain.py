@@ -5,7 +5,10 @@ import json
 
 import pytest
 
-from veritas.execution import GatewayExecutionObservationError, GatewayExecutionObservationV1
+from veritas.execution import (
+    GatewayExecutionObservationError,
+    GatewayExecutionObservationV1,
+)
 from veritas.service import VeritasChainService
 from veritas.worm import WORMLog
 
