@@ -16,6 +16,7 @@ from veritas.contracts import (
     ObservationPackageV1,
     StoredEvidenceReportV1,
 )
+from veritas.execution import GatewayExecutionObservationV1
 from veritas.worm import WORMLog
 
 
@@ -43,6 +44,18 @@ class VeritasChainService:
         return self.worm.append(
             self._next_entry_id("obs-pkg", package.package_id), payload
         )
+
+    def store_gateway_execution_observation(
+        self, payload: Mapping[str, Any], *, tenant_id: str
+    ) -> str:
+        """Verify Gateway execution evidence, package it, and append it to WORM.
+
+        Invalid/tampered handoffs never reach storage. This is evidence admission,
+        not authorization: Veritas cannot grant or extend execution authority.
+        """
+        observation = GatewayExecutionObservationV1.verify(payload)
+        package = observation.to_observation_package(tenant_id=tenant_id)
+        return self.store_observation_package(package)
 
     def store_boundary_negative_evidence(
         self, evidence: BoundaryNegativeEvidenceV1

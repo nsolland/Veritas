@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from veritas.contracts import ObservedEventV1
+from veritas.contracts import ObservationPackageV1, ObservedEventV1
 
 _SCHEMA = "valo.gateway.execution-observation.v1"
 _ALLOWED_STATUS = {"succeeded", "failed", "partial", "blocked"}
@@ -133,4 +133,28 @@ class GatewayExecutionObservationV1:
                 "execution_status": data["status"],
                 "authority_granted": False,
             },
+        )
+
+    def to_observation_package(self, *, tenant_id: str) -> ObservationPackageV1:
+        """Bind the verified Gateway execution fact into Veritas' immutable chain contract.
+
+        The package references the REHT clearance as authorization evidence and the
+        Gateway observation itself as the execution handoff. It records facts only;
+        no authority is created or inferred here.
+        """
+        data = dict(self.payload)
+        _require_text("tenant_id", tenant_id)
+        event = self.to_observed_event()
+        skill_digest = data.get("skill_binding_digest")
+        return ObservationPackageV1(
+            package_id=f"gateway-execution:{data['execution_id']}",
+            tenant_id=tenant_id,
+            execution_id=data["execution_id"],
+            authorization_ref=f"clearance:{data['clearance_id']}",
+            authorization_digest="sha256:" + data["clearance_digest"],
+            handoff_ref=f"gateway-observation:{data['execution_id']}",
+            handoff_digest=data["observation_digest"],
+            observed_events=(event,),
+            skill_binding_digest=skill_digest,
+            created_at=datetime.fromisoformat(data["completed_at"]),
         )
