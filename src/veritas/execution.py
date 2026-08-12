@@ -7,11 +7,44 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from veritas.contracts import ObservationPackageV1, ObservedEventV1
+from veritas.contracts import (
+    GovernedWorkspaceLineageEvidenceV1,
+    ObservationPackageV1,
+    ObservedEventV1,
+    VeritasContractError,
+)
 
 _SCHEMA = "valo.gateway.execution-observation.v1"
 _ALLOWED_STATUS = {"succeeded", "failed", "partial", "blocked"}
 _HEX = set("0123456789abcdef")
+_BASE_FIELDS = frozenset(
+    {
+        "schema",
+        "execution_id",
+        "permit_id",
+        "execution_nonce",
+        "permit_consumed_at",
+        "clearance_id",
+        "clearance_digest",
+        "authority_envelope_id",
+        "authority_digest",
+        "action_digest",
+        "executor_id",
+        "started_at",
+        "completed_at",
+        "status",
+        "response_digest",
+        "receipt_hash",
+        "previous_receipt_hash",
+        "skill_binding_digest",
+        "authority_granted",
+        "observation_digest",
+    }
+)
+_WORKSPACE_FIELDS = frozenset(
+    {"workspace_binding", "workspace_binding_digest", "kernel_context_digest"}
+)
+_ALLOWED_FIELDS = _BASE_FIELDS | _WORKSPACE_FIELDS
 
 
 class GatewayExecutionObservationError(ValueError):
@@ -56,6 +89,38 @@ def _require_timestamp(name: str, value: Any) -> str:
     return text
 
 
+def _verify_workspace_binding(
+    data: Mapping[str, Any],
+) -> GovernedWorkspaceLineageEvidenceV1 | None:
+    present = {name for name in _WORKSPACE_FIELDS if name in data}
+    if not present:
+        return None
+    if present != _WORKSPACE_FIELDS:
+        raise GatewayExecutionObservationError(
+            "workspace binding, workspace digest, and Kernel context digest "
+            "must be bound together"
+        )
+    raw_binding = data.get("workspace_binding")
+    if not isinstance(raw_binding, Mapping):
+        raise GatewayExecutionObservationError("workspace_binding must be an object")
+    workspace_digest = _require_hex_digest(
+        "workspace_binding_digest",
+        data.get("workspace_binding_digest"),
+        prefixed=True,
+    )
+    kernel_digest = _require_hex_digest(
+        "kernel_context_digest", data.get("kernel_context_digest"), prefixed=True
+    )
+    try:
+        binding = GovernedWorkspaceLineageEvidenceV1.from_mapping(raw_binding)
+        binding.to_payload()
+    except VeritasContractError as exc:
+        raise GatewayExecutionObservationError(str(exc)) from exc
+    if binding.binding_pair != (workspace_digest, kernel_digest):
+        raise GatewayExecutionObservationError("governed workspace binding digest mismatch")
+    return binding
+
+
 @dataclass(frozen=True)
 class GatewayExecutionObservationV1:
     payload: Mapping[str, Any]
@@ -65,6 +130,12 @@ class GatewayExecutionObservationV1:
         data = dict(payload)
         if data.get("schema") != _SCHEMA:
             raise GatewayExecutionObservationError("unsupported Gateway observation schema")
+        unexpected = set(data).difference(_ALLOWED_FIELDS)
+        if unexpected:
+            raise GatewayExecutionObservationError(
+                "unexpected Gateway observation fields: "
+                + ", ".join(sorted(unexpected))
+            )
         if data.get("authority_granted") is not False:
             raise GatewayExecutionObservationError("Veritas handoff must never grant authority")
 
@@ -100,6 +171,7 @@ class GatewayExecutionObservationV1:
                     _require_hex_digest(name, value, prefixed=True)
                 else:
                     _require_hex_digest(name, value)
+        _verify_workspace_binding(data)
 
         claimed = data.pop("observation_digest")
         expected = _gateway_digest(data)
@@ -118,21 +190,31 @@ class GatewayExecutionObservationV1:
 
     def to_observed_event(self, *, source_id: str = "valo-gateway") -> ObservedEventV1:
         data = dict(self.payload)
+        workspace_binding = _verify_workspace_binding(data)
+        provenance: dict[str, Any] = {
+            "permit_id": data["permit_id"],
+            "clearance_id": data["clearance_id"],
+            "authority_envelope_id": data["authority_envelope_id"],
+            "action_digest": data["action_digest"],
+            "receipt_hash": data["receipt_hash"],
+            "execution_status": data["status"],
+            "authority_granted": False,
+        }
+        if workspace_binding is not None:
+            provenance.update(
+                {
+                    "workspace_binding": workspace_binding.to_payload(),
+                    "workspace_binding_digest": data["workspace_binding_digest"],
+                    "kernel_context_digest": data["kernel_context_digest"],
+                }
+            )
         return ObservedEventV1(
             event_id=f"execution:{data['execution_id']}",
             source_id=source_id,
             event_type="execution_result_observed",
             observed_at=datetime.fromisoformat(data["completed_at"]),
             payload_digest=data["observation_digest"],
-            provenance={
-                "permit_id": data["permit_id"],
-                "clearance_id": data["clearance_id"],
-                "authority_envelope_id": data["authority_envelope_id"],
-                "action_digest": data["action_digest"],
-                "receipt_hash": data["receipt_hash"],
-                "execution_status": data["status"],
-                "authority_granted": False,
-            },
+            provenance=provenance,
         )
 
     def to_observation_package(self, *, tenant_id: str) -> ObservationPackageV1:
@@ -144,6 +226,7 @@ class GatewayExecutionObservationV1:
         """
         data = dict(self.payload)
         _require_text("tenant_id", tenant_id)
+        workspace_binding = _verify_workspace_binding(data)
         event = self.to_observed_event()
         skill_digest = data.get("skill_binding_digest")
         return ObservationPackageV1(
@@ -156,5 +239,8 @@ class GatewayExecutionObservationV1:
             handoff_digest=data["observation_digest"],
             observed_events=(event,),
             skill_binding_digest=skill_digest,
+            workspace_binding=workspace_binding,
+            workspace_binding_digest=data.get("workspace_binding_digest"),
+            kernel_context_digest=data.get("kernel_context_digest"),
             created_at=datetime.fromisoformat(data["completed_at"]),
         )

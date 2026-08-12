@@ -42,6 +42,135 @@ class ObservedEventV1:
         }
 
 
+_GOVERNED_WORKSPACE_LINEAGE_FIELDS = frozenset(
+    {
+        "tenant_id",
+        "work_unit_id",
+        "workspace_id",
+        "workspace_digest",
+        "workspace_expires_at",
+        "program_ref",
+        "program_digest",
+        "invocation_id",
+        "candidate_id",
+        "candidate_digest",
+        "proposed_action_digest",
+        "conformance_report_id",
+        "conformance_digest",
+        "source_state_digest",
+        "conformed_state_digest",
+        "source_event_position",
+        "conformed_at",
+        "dependency_digest",
+        "workspace_binding_digest",
+        "kernel_context_digest",
+    }
+)
+
+
+@dataclass(frozen=True)
+class GovernedWorkspaceLineageEvidenceV1:
+    """Exact, non-authoritative lineage observed at the execution boundary."""
+
+    tenant_id: str
+    work_unit_id: str
+    workspace_id: str
+    workspace_digest: str
+    workspace_expires_at: str
+    program_ref: str
+    program_digest: str
+    invocation_id: str
+    candidate_id: str
+    candidate_digest: str
+    proposed_action_digest: str
+    conformance_report_id: str
+    conformance_digest: str
+    source_state_digest: str
+    conformed_state_digest: str
+    source_event_position: int
+    conformed_at: str
+    dependency_digest: str
+    workspace_binding_digest: str
+    kernel_context_digest: str
+
+    @classmethod
+    def from_mapping(
+        cls, value: Mapping[str, Any]
+    ) -> GovernedWorkspaceLineageEvidenceV1:
+        data = dict(value)
+        missing = _GOVERNED_WORKSPACE_LINEAGE_FIELDS.difference(data)
+        extra = set(data).difference(_GOVERNED_WORKSPACE_LINEAGE_FIELDS)
+        if missing or extra:
+            detail = []
+            if missing:
+                detail.append(f"missing: {', '.join(sorted(missing))}")
+            if extra:
+                detail.append(f"unexpected: {', '.join(sorted(extra))}")
+            raise VeritasContractError(
+                "invalid governed workspace lineage fields (" + "; ".join(detail) + ")"
+            )
+        return cls(**data)
+
+    @property
+    def binding_pair(self) -> tuple[str, str]:
+        return self.workspace_binding_digest, self.kernel_context_digest
+
+    def to_payload(self) -> dict[str, Any]:
+        for name, value in {
+            "tenant_id": self.tenant_id,
+            "work_unit_id": self.work_unit_id,
+            "workspace_id": self.workspace_id,
+            "program_ref": self.program_ref,
+            "invocation_id": self.invocation_id,
+            "candidate_id": self.candidate_id,
+            "conformance_report_id": self.conformance_report_id,
+        }.items():
+            _require_text(name, value)
+        for name, value in {
+            "workspace_digest": self.workspace_digest,
+            "program_digest": self.program_digest,
+            "candidate_digest": self.candidate_digest,
+            "proposed_action_digest": self.proposed_action_digest,
+            "conformance_digest": self.conformance_digest,
+            "source_state_digest": self.source_state_digest,
+            "conformed_state_digest": self.conformed_state_digest,
+            "dependency_digest": self.dependency_digest,
+            "workspace_binding_digest": self.workspace_binding_digest,
+            "kernel_context_digest": self.kernel_context_digest,
+        }.items():
+            _require_digest(name, value)
+        _require_iso_timestamp("workspace_expires_at", self.workspace_expires_at)
+        _require_iso_timestamp("conformed_at", self.conformed_at)
+        if (
+            isinstance(self.source_event_position, bool)
+            or not isinstance(self.source_event_position, int)
+            or self.source_event_position < 0
+        ):
+            raise VeritasContractError("source_event_position must be a non-negative integer")
+        return {
+            "tenant_id": self.tenant_id,
+            "work_unit_id": self.work_unit_id,
+            "workspace_id": self.workspace_id,
+            "workspace_digest": self.workspace_digest,
+            "workspace_expires_at": self.workspace_expires_at,
+            "program_ref": self.program_ref,
+            "program_digest": self.program_digest,
+            "invocation_id": self.invocation_id,
+            "candidate_id": self.candidate_id,
+            "candidate_digest": self.candidate_digest,
+            "proposed_action_digest": self.proposed_action_digest,
+            "conformance_report_id": self.conformance_report_id,
+            "conformance_digest": self.conformance_digest,
+            "source_state_digest": self.source_state_digest,
+            "conformed_state_digest": self.conformed_state_digest,
+            "source_event_position": self.source_event_position,
+            "conformed_at": self.conformed_at,
+            "dependency_digest": self.dependency_digest,
+            "workspace_binding_digest": self.workspace_binding_digest,
+            "kernel_context_digest": self.kernel_context_digest,
+        }
+
+
 @dataclass(frozen=True)
 class ObservationPackageV1:
     package_id: str
@@ -53,6 +182,9 @@ class ObservationPackageV1:
     handoff_digest: str
     observed_events: Sequence[ObservedEventV1]
     skill_binding_digest: str | None = None
+    workspace_binding: GovernedWorkspaceLineageEvidenceV1 | None = None
+    workspace_binding_digest: str | None = None
+    kernel_context_digest: str | None = None
     unavailable_sources: Sequence[str] = field(default_factory=tuple)
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
@@ -69,10 +201,34 @@ class ObservationPackageV1:
         _require_digest("handoff_digest", self.handoff_digest)
         if self.skill_binding_digest is not None:
             _require_digest("skill_binding_digest", self.skill_binding_digest)
+        workspace_values = (
+            self.workspace_binding,
+            self.workspace_binding_digest,
+            self.kernel_context_digest,
+        )
+        if any(value is None for value in workspace_values) != all(
+            value is None for value in workspace_values
+        ):
+            raise VeritasContractError(
+                "workspace binding, workspace digest, and Kernel context digest "
+                "must be bound together"
+            )
+        workspace_payload: dict[str, Any] | None = None
+        if self.workspace_binding is not None:
+            workspace_payload = self.workspace_binding.to_payload()
+            _require_digest("workspace_binding_digest", self.workspace_binding_digest)
+            _require_digest("kernel_context_digest", self.kernel_context_digest)
+            if self.workspace_binding.binding_pair != (
+                self.workspace_binding_digest,
+                self.kernel_context_digest,
+            ):
+                raise VeritasContractError("governed workspace binding digest mismatch")
+            if self.workspace_binding.tenant_id != self.tenant_id:
+                raise VeritasContractError("governed workspace tenant mismatch")
         events = [event.to_dict() for event in self.observed_events]
         if len({event["event_id"] for event in events}) != len(events):
             raise VeritasContractError("observed event ids must be unique")
-        payload = {
+        payload: dict[str, Any] = {
             "package_id": self.package_id,
             "tenant_id": self.tenant_id,
             "execution_id": self.execution_id,
@@ -86,6 +242,10 @@ class ObservationPackageV1:
         }
         if self.skill_binding_digest is not None:
             payload["skill_binding_digest"] = self.skill_binding_digest
+        if workspace_payload is not None:
+            payload["workspace_binding"] = workspace_payload
+            payload["workspace_binding_digest"] = self.workspace_binding_digest
+            payload["kernel_context_digest"] = self.kernel_context_digest
         return payload
 
 
@@ -324,6 +484,17 @@ def _require_digest(name: str, value: object) -> None:
     suffix = value[7:]
     if len(suffix) != 64 or any(char not in "0123456789abcdef" for char in suffix):
         raise VeritasContractError(f"{name} must be a sha256 digest")
+
+
+def _require_iso_timestamp(name: str, value: object) -> None:
+    if not isinstance(value, str) or not value:
+        raise VeritasContractError(f"{name} must be ISO-8601")
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise VeritasContractError(f"{name} must be ISO-8601") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise VeritasContractError(f"{name} must be timezone-aware")
 
 
 def _timestamp(value: datetime) -> str:
