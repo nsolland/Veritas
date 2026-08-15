@@ -14,6 +14,7 @@ from veritas.execution import (
     GatewayExecutionObservationError,
     GatewayExecutionObservationV1,
 )
+from veritas.execution_substrate import ConfidentialExecutionEvidenceV1
 from veritas.receipts import (
     AccessibleReceiptArchiver,
     ReceiptArchiveError,
@@ -31,6 +32,7 @@ __all__ = [
     "AccessibleReceiptArchiver",
     "BoundaryNegativeEvidenceV1",
     "CompletedEvidencePackageV1",
+    "ConfidentialExecutionEvidenceV1",
     "FinalEvidenceBindingV1",
     "GatewayExecutionObservationError",
     "GatewayExecutionObservationV1",
