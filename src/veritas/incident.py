@@ -61,7 +61,8 @@ class IncidentEvidenceChainV1:
         forbidden = _FORBIDDEN_ANALYSIS_FIELDS.intersection(metadata)
         if forbidden:
             raise VeritasContractError(
-                "incident evidence metadata contains analysis fields: "n                + ", ".join(sorted(forbidden))
+                "incident evidence metadata contains analysis fields: "
+                + ", ".join(sorted(forbidden))
             )
         return {
             "chain_id": self.chain_id,
