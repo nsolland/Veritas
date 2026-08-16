@@ -55,7 +55,8 @@ def test_incident_chain_is_append_only_and_findable() -> None:
     service = VeritasChainService(worm)
     digest = service.store_incident_evidence_chain(_chain())
 
-    assert len(digest) == 64
+    assert digest.startswith("sha256:")
+    assert len(digest.removeprefix("sha256:")) == 64
     assert service.verify_chain() is True
     assert service.find_entry("chain-1")["incident_id"] == "incident-7"
     assert service.find_entry("incident-7")["chain_id"] == "chain-1"
