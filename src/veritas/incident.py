@@ -7,8 +7,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
-from .contracts import VeritasContractError
-
+from veritas.contracts import VeritasContractError
 
 _FORBIDDEN_ANALYSIS_FIELDS = frozenset(
     {"classification", "conclusion", "severity", "root_cause", "evidence_sufficient"}
