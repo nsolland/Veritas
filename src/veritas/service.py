@@ -17,6 +17,7 @@ from veritas.contracts import (
     StoredEvidenceReportV1,
 )
 from veritas.execution import GatewayExecutionObservationV1
+from veritas.incident import IncidentEvidenceChainV1
 from veritas.worm import WORMLog
 
 
@@ -91,6 +92,15 @@ class VeritasChainService:
             self._next_entry_id("final-binding", binding.follow_on_id), payload
         )
 
+    def store_incident_evidence_chain(self, chain: IncidentEvidenceChainV1) -> str:
+        """Append one non-interpretive binding across an incident evidence chain."""
+        payload = chain.to_payload()
+        self._sequence += 1
+        payload["sequence"] = self._sequence
+        return self.worm.append(
+            self._next_entry_id("incident-chain", chain.chain_id), payload
+        )
+
     def verify_chain(self) -> bool:
         """Verify the full WORM chain is intact."""
         return self.worm.verify()
@@ -104,6 +114,8 @@ class VeritasChainService:
                 entry.get("record_id"),
                 entry.get("report_id"),
                 entry.get("follow_on_id"),
+                entry.get("chain_id"),
+                entry.get("incident_id"),
             ):
                 return entry
         return None
