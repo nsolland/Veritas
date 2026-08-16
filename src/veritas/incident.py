@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
-from veritas.contracts import VeritasContractError
+from .contracts import VeritasContractError
 
 
 _FORBIDDEN_ANALYSIS_FIELDS = frozenset(
