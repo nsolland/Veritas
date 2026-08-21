@@ -22,11 +22,11 @@ description:
       Veritas never analyses, classifies, concludes or authorizes.
 legal:
   license: MIT
-  mainCopyrightOwner: "Veritas contributors"
+  mainCopyrightOwner: "Njål Gaute Solland"
 maintenance:
   type: community
   contacts:
-    - name: "Veritas contributors"
+    - name: "Njål Gaute Solland"
 localisation:
   localisationReady: true
   availableLanguages:
