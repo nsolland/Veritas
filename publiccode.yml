@@ -22,12 +22,11 @@ description:
       Veritas never analyses, classifies, concludes or authorizes.
 legal:
   license: MIT
-  mainCopyrightOwner: "VALO Contributors"
+  mainCopyrightOwner: "Veritas contributors"
 maintenance:
   type: community
   contacts:
-    - name: "VALO Contributors"
-      email: "engineering@valo.systems"
+    - name: "Veritas contributors"
 localisation:
   localisationReady: true
   availableLanguages:
