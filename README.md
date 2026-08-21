@@ -1,47 +1,49 @@
-# Veritas — VALO Receipt Layer (LA6)
+# Veritas
 
-Veritas records and attests observations and follow-on receipts. It does not
-analyse, classify, conclude, or authorize what the observations mean.
+Veritas is a receipt, attestation and verification layer for governed actions. It records observations, preserves provenance and verifies deterministic evidence bindings without interpreting what the observations mean or creating execution authority.
 
-**Record. Attest. Prove. No interpretation.**
+Record. Attest. Prove. No interpretation.
 
-## Architecture position
+## Boundary
+
+Veritas can sit behind any compatible enforcement/runtime layer that emits the required receipt and provenance bindings.
 
 ```text
-Speider (LA1) → BARO (LA2) → VAIG (LA3) → REHT (LA4) → RACS (LA5) → Execution → Veritas (LA6)
+authorization / decision provider
+            |
+            v
+mechanical enforcement / execution
+            |
+            v
+receipt / observation
+            |
+            v
+Veritas record + verify
 ```
 
-Veritas is the receipt layer that documents what actually happened, bound to the
-authorization and evidence chain.
+VALO Gateway, RACS and REHT are compatible producers/bindings used by the VALO stack. They are not required to use Veritas as a receipt verifier.
+
+Veritas does not analyse, classify, conclude, grant authority, approve actions or authorize execution.
 
 ## Doctrine
 
-- **Attest, don't interpret.** Veritas rejects analysis fields (`classification`,
-  `conclusion`, `evidence_sufficient`) in completed evidence.
-- **Negative evidence is boundary-derived.** Missing observations or missing log
-  entries are never proof that an action did not occur. Negative evidence must
-  bind the excluded action to an authorization, enforced execution boundary,
-  enforcement record, coverage attestation, and explicit time window.
-- **Append-only WORM.** Every receipt links to the previous via a canonical
-  SHA-256 digest; any modification breaks the chain.
-- **Deterministic digests.** RFC-8785-style stable JSON → SHA-256, so receipts
-  are byte-identical across implementations.
-- **Provenance-first.** Every observation package carries source, authorization
-  and handoff references with digests.
+- Attest, don't interpret. Veritas rejects analysis fields such as `classification`, `conclusion` and `evidence_sufficient` in completed evidence.
+- Negative evidence is boundary-derived. Missing observations or log entries are never proof that an action did not occur.
+- Append-only WORM. Every receipt links to the previous receipt through a canonical digest; modification breaks the chain.
+- Deterministic digests. Stable canonical JSON is hashed so independent implementations can verify the same binding.
+- Provenance-first. Observation packages carry source, authorization and handoff references with digests.
+- Evidence is not authority. A valid receipt can establish integrity or continuity; it cannot grant current permission to execute.
 
 ## Contracts
 
 - `ObservedEventV1` — a single observed event with provenance
 - `ObservationPackageV1` — a governed observation package
-- `BoundaryNegativeEvidenceV1` — boundary-derived negative evidence; never
-  inferred from absence of observations
-- `CompletedEvidencePackageV1` — completed evidence (rejects analysis fields)
+- `BoundaryNegativeEvidenceV1` — boundary-derived negative evidence
+- `CompletedEvidencePackageV1` — completed evidence without analysis claims
 - `StoredEvidenceReportV1` — stored evidence report bound to a chain
 - `FinalEvidenceBindingV1` — final follow-on evidence binding
 - `ReceiptArchiveRecordV1` — immutable local-first receipt archive record
-- `AccessibleReceiptArchiver` — append-only, local-first receipt/warranty
-  archive with a verifiable Veritas chain binding (never grants clearance or
-  execution authority)
+- `AccessibleReceiptArchiver` — append-only receipt archive with verifiable chain binding
 
 ## Quick start
 
@@ -49,7 +51,7 @@ authorization and evidence chain.
 from veritas import VeritasChainService, WORMLog
 
 service = VeritasChainService(WORMLog())
-digest = service.store_observation_package(package)  # → sha256:<hex>
+digest = service.store_observation_package(package)
 assert service.verify_chain() is True
 ```
 
@@ -58,6 +60,10 @@ Verify a persisted ledger from the CLI:
 ```bash
 veritas-verify ledger.jsonl
 ```
+
+## Publication
+
+See `PUBLICATION_STATUS.md`. The public surface is the portable receipt/verifier layer and compatible non-authoritative adapters. Production evidence, secrets and authorization logic are outside this repository boundary.
 
 ## Development
 
@@ -72,4 +78,4 @@ PEP 668 systems: `PYTHONPATH=src python3 -m pytest -q`.
 
 ## License
 
-MIT — VALO Contributors.
+MIT. See `LICENSE`.
