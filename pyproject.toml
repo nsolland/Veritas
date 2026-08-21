@@ -5,20 +5,23 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "veritas"
 version = "0.2.0"
-description = "Veritas — VALO receipt layer (LA6). Attests observations without interpreting them."
+description = "Portable receipt, attestation and verification layer for governed actions."
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [
-    {name = "VALO Contributors", email = "engineering@valo.systems"},
+    {name = "Veritas contributors"},
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Security :: Cryptography",
+    "Typing :: Typed",
 ]
 
 dependencies = ["jsoncanon>=0.2.3", "cryptography>=41.0"]
@@ -28,6 +31,11 @@ dev = ["pytest>=7.0", "ruff>=0.4", "mypy>=1.8"]
 
 [project.scripts]
 veritas-verify = "veritas.cli:main"
+
+[project.urls]
+Source = "https://github.com/nsolland/Veritas"
+Documentation = "https://github.com/nsolland/Veritas/blob/main/README.md"
+Security = "https://github.com/nsolland/Veritas/blob/main/SECURITY.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
