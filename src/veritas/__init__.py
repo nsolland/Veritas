@@ -10,6 +10,10 @@ from veritas.contracts import (
     StoredEvidenceReportV1,
 )
 from veritas.digest import CANONICALIZATION_ALGORITHM, canonical_digest, stable_json
+from veritas.effect_boundary import (
+    EffectBoundaryExecutionObservationV1,
+    EffectBoundaryObservationError,
+)
 from veritas.execution import (
     GatewayExecutionObservationError,
     GatewayExecutionObservationV1,
@@ -33,6 +37,8 @@ __all__ = [
     "BoundaryNegativeEvidenceV1",
     "CompletedEvidencePackageV1",
     "ConfidentialExecutionEvidenceV1",
+    "EffectBoundaryExecutionObservationV1",
+    "EffectBoundaryObservationError",
     "FinalEvidenceBindingV1",
     "GatewayExecutionObservationError",
     "GatewayExecutionObservationV1",
