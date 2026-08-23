@@ -16,6 +16,7 @@ from veritas.contracts import (
     ObservationPackageV1,
     StoredEvidenceReportV1,
 )
+from veritas.effect_boundary import EffectBoundaryExecutionObservationV1
 from veritas.execution import GatewayExecutionObservationV1
 from veritas.incident import IncidentEvidenceChainV1
 from veritas.worm import WORMLog
@@ -30,8 +31,6 @@ class VeritasChainService:
 
     def __init__(self, worm: WORMLog) -> None:
         self.worm = worm
-        # Continue the advisory sequence from an existing ledger so reloading a
-        # service never re-numbers entries already committed to the chain.
         self._sequence = len(worm.read_all())
 
     @staticmethod
@@ -49,14 +48,28 @@ class VeritasChainService:
     def store_gateway_execution_observation(
         self, payload: Mapping[str, Any], *, tenant_id: str
     ) -> str:
-        """Verify Gateway execution evidence, package it, and append it to WORM.
-
-        Invalid/tampered handoffs never reach storage. This is evidence admission,
-        not authorization: Veritas cannot grant or extend execution authority.
-        """
+        """Verify Gateway execution evidence, package it, and append it to WORM."""
         observation = GatewayExecutionObservationV1.verify(payload)
         package = observation.to_observation_package(tenant_id=tenant_id)
         return self.store_observation_package(package)
+
+    def store_effect_boundary_execution_observation(
+        self,
+        payload: Mapping[str, Any],
+    ) -> str:
+        """Verify a two-core REHT EffectBoundary receipt and append it to WORM.
+
+        Invalid/tampered receipts never reach storage. The stored artifact is
+        execution evidence only and must have ``authority_granted=false``.
+        """
+        observation = EffectBoundaryExecutionObservationV1.verify(payload)
+        worm_payload = observation.to_worm_payload()
+        self._sequence += 1
+        worm_payload["sequence"] = self._sequence
+        return self.worm.append(
+            self._next_entry_id("effect-boundary", observation.receipt_id),
+            worm_payload,
+        )
 
     def store_boundary_negative_evidence(
         self, evidence: BoundaryNegativeEvidenceV1
@@ -116,6 +129,7 @@ class VeritasChainService:
                 entry.get("follow_on_id"),
                 entry.get("chain_id"),
                 entry.get("incident_id"),
+                entry.get("receipt_id"),
             ):
                 return entry
         return None
