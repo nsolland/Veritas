@@ -1,15 +1,3 @@
 {
-  "claim": "ear-v1-worm-chain",
-  "owner": "ChatGPT",
-  "base": "main",
-  "branch": "feat/ear-v1-worm-chain",
-  "owned_files": [
-    "src/veritas/execution.py",
-    "src/veritas/service.py",
-    "tests/test_gateway_execution_worm_chain.py"
-  ],
-  "dependencies": [
-    "nsolland/valo-reht@e8be4b063e06e8d4606b306892556a37aba7e458",
-    "nsolland/valo-gateway@188a7502e248ca031d4715acce457ba5b59189b4"
-  ]
+  "public_note": "Internal delivery claims, branch ownership, private dependency references, and operational work history are intentionally not published in this repository."
 }
