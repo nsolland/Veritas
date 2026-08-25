@@ -1,15 +1,15 @@
 schema_version: "1.0"
 repository:
-  id: "valo.veritas"
+  id: "veritas"
   name: "Veritas"
   url: "https://github.com/nsolland/Veritas"
   owner: "nsolland"
   maintainers:
     - nsolland
   classification: receipt
-  role: "LA6 — receipt layer: attest observations and follow-on receipts without interpreting"
+  role: "Public receipt and evidence integrity reference implementation"
   status: active
-  visibility: private
+  visibility: public
   maturity: active-development
   support: maintained
   normative_status: normative-specification
@@ -25,6 +25,3 @@ prohibitions:
   - "no_analysis_or_classification"
   - "no_authorization"
   - "no_rewriting_history"
-
-layers:
-  - "LA6-VERITAS"
