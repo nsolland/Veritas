@@ -25,6 +25,35 @@ VALO Gateway, RACS and REHT are compatible producers/bindings used by the VALO s
 
 Veritas does not analyse, classify, conclude, grant authority, approve actions or authorize execution.
 
+## Evidence ingress
+
+Veritas also accepts external standards-based evidence as provenance-bound input before a governed decision. The first defined profile is CycloneDX AI/ML-BOM.
+
+```text
+external evidence / AI-ML-BOM
+            |
+            v
+Veritas ingest + verify
+            |
+            v
+canonical evidence state
+            |
+            v
+MAL / VAIG / REHT / RACS
+            |
+            v
+governed effect
+            |
+            v
+Veritas receipt
+```
+
+This makes Veritas both evidence-in and evidence-out while preserving the same boundary: it records and verifies evidence; it does not interpret the evidence or create authority.
+
+Canonical evidence keys allow downstream layers to compare equivalent facts on equivalent terms — model identity/version, pedigree, dependency identity/version, dataset-lineage references, attestations and source-artifact digests — while the original source artifact remains cryptographically bound.
+
+See `docs/CYCLONEDX_AI_ML_BOM_INGRESS.md`.
+
 ## Doctrine
 
 - Attest, don't interpret. Veritas rejects analysis fields such as `classification`, `conclusion` and `evidence_sufficient` in completed evidence.
