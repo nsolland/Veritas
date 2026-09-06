@@ -36,6 +36,7 @@ _BASE_FIELDS = frozenset(
         "status",
         "response_digest",
         "receipt_hash",
+        "boundary_replay_digest",
         "previous_receipt_hash",
         "skill_binding_digest",
         "authority_granted",
@@ -210,7 +211,7 @@ class GatewayExecutionObservationV1:
             raise GatewayExecutionObservationError("invalid execution status")
         if data.get("response_digest") is not None:
             _require_hex_digest("response_digest", data.get("response_digest"))
-        for name in ("previous_receipt_hash", "skill_binding_digest"):
+        for name in ("previous_receipt_hash", "skill_binding_digest", "boundary_replay_digest"):
             if data.get(name) is not None:
                 value = data.get(name)
                 if isinstance(value, str) and value.startswith("sha256:"):
